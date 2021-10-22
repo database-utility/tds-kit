@@ -1,4 +1,4 @@
-# MSSQLClient
+# MSSQL Client
 
 Microsoft SQL Server client for iOS, watchOS, tvOS, and macOS. An Objective-C wrapper around the open-source [FreeTDS](https://github.com/FreeTDS/freetds/) library.
 

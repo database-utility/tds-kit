@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-  name: "MSSQLClient",
+  name: "mssql-client",
   platforms: [
     .iOS(.v15)
   ],
