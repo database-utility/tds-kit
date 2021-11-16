@@ -1,38 +1,19 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.3
 import PackageDescription
 
 let package = Package(
   name: "mssql-client",
   platforms: [
-    .iOS(.v15)
+    .macOS(.v11),
+    .iOS(.v14),
+    .watchOS(.v7),
+    .tvOS(.v14)
   ],
   products: [
     .library(name: "MSSQLClient", targets: ["MSSQLClient", "FreeTDS"]),
-//    .library(name: "MSSQLClient", targets: ["MSSQLClient"]),
   ],
   targets: [
     .target(name: "MSSQLClient", publicHeadersPath: "."),
     .binaryTarget(name: "FreeTDS", path: "libsybdb.xcframework")
   ]
 )
-
-//let package = Package(
-//  name: "MSSQLClient",
-//  platforms: [
-//    .iOS(.v15)
-//  ],
-//  products: [
-//    .library(
-//      name: "MSSQLClient",
-//      targets: ["MSSQLClient"]),
-//    .library(
-//      name: "MSSQLClientObjC",
-//      targets: ["MSSQLClientObjC"])
-//  ],
-//  targets: [
-//    .target(name: "MSSQLClientObjC",
-//            publicHeadersPath: "."),
-//    .target(name: "MSSQLClient",
-//            dependencies: ["MSSQLClientObjC"]),
-//  ]
-//)
