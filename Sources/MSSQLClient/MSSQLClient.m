@@ -582,7 +582,7 @@ struct COLUMN {
 //Handles message callback from FreeTDS library.
 int msg_handler(DBPROCESS* dbproc, DBINT msgno, int msgstate, int severity, char* msgtext, char* srvname, char* procname, int line) {
   MSSQLClient* self = CFBridgingRelease(dbgetuserdata(dbproc));
-  NSLog(@"%@ %@", self, [NSString stringWithUTF8String:msgtext]);
+  // NSLog(@"MSSQLClient: %@", [NSString stringWithUTF8String:msgtext]);
   [self message:[NSString stringWithUTF8String:msgtext]];
   return INT_EXIT;
 }
@@ -590,7 +590,7 @@ int msg_handler(DBPROCESS* dbproc, DBINT msgno, int msgstate, int severity, char
 //Handles error callback from FreeTDS library.
 int err_handler(DBPROCESS* dbproc, int severity, int dberr, int oserr, char* dberrstr, char* oserrstr) {
   MSSQLClient* self = CFBridgingRelease(dbgetuserdata(dbproc));
-  NSLog(@"%@ %@", self, [NSString stringWithUTF8String:dberrstr]);
+  // NSLog(@"MSSQLClient: %@", [NSString stringWithUTF8String:dberrstr]);
   [self error:[NSString stringWithUTF8String:dberrstr] code:dberr severity:severity];
   return INT_CANCEL;
 }
