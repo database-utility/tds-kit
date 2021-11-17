@@ -42,7 +42,7 @@ struct COLUMN {
 @property (nonatomic, strong) NSOperationQueue* workerQueue;
 @property (nonatomic, weak) NSOperationQueue* callbackQueue;
 @property (atomic, assign, getter=isExecuting) BOOL executing;
-@property (nonatomic, strong) NSError* lastError;
+//@property (nonatomic, strong) NSError* lastError;
 
 @end
 
@@ -164,7 +164,8 @@ struct COLUMN {
 
 // TODO: get number of records modified for insert/update/delete commands
 // TODO: handle SQL stored procedure output parameters
-- (void)execute:(nonnull NSString*)sql completion:(nullable void(^)(NSArray* results, NSError* error))completion {
+- (void)execute:(nonnull NSString*)sql completion:(nullable void(^)(NSArray* _Nullable results))completion {
+//- (void)execute:(nonnull NSString*)sql completion:(nullable void(^)(NSArray* results, NSError* error))completion {
   NSParameterAssert(sql);
   
   //Execute query on worker queue
@@ -183,7 +184,7 @@ struct COLUMN {
     }
     
     self.executing = YES;
-    self.lastError = nil;
+//    self.lastError = nil;
     
     //Set query timeout
     dbsettime(self.timeout);
@@ -581,16 +582,17 @@ struct COLUMN {
 
 //Handles message callback from FreeTDS library.
 int msg_handler(DBPROCESS* dbproc, DBINT msgno, int msgstate, int severity, char* msgtext, char* srvname, char* procname, int line) {
-  MSSQLClient* self = CFBridgingRelease(dbgetuserdata(dbproc));
-  // NSLog(@"MSSQLClient: %@", [NSString stringWithUTF8String:msgtext]);
+  MSSQLClient* self = (__bridge MSSQLClient*)(void*)dbgetuserdata(dbproc);
+  // NSLog(@"[MSSQLClient] info: %@", [NSString stringWithUTF8String:msgtext]);
   [self message:[NSString stringWithUTF8String:msgtext]];
   return INT_EXIT;
 }
 
 //Handles error callback from FreeTDS library.
 int err_handler(DBPROCESS* dbproc, int severity, int dberr, int oserr, char* dberrstr, char* oserrstr) {
-  MSSQLClient* self = CFBridgingRelease(dbgetuserdata(dbproc));
-  // NSLog(@"MSSQLClient: %@", [NSString stringWithUTF8String:dberrstr]);
+//  MSSQLClient* self = CFBridgingRetain((MSSQLClient*)dbgetuserdata(dbproc));
+  MSSQLClient* self = (__bridge MSSQLClient*)(void*)dbgetuserdata(dbproc);
+  NSLog(@"[MSSQLClient] error: %@", [NSString stringWithUTF8String:dberrstr]);
   [self error:[NSString stringWithUTF8String:dberrstr] code:dberr severity:severity];
   return INT_CANCEL;
 }
@@ -604,10 +606,10 @@ int err_handler(DBPROCESS* dbproc, int severity, int dberr, int oserr, char* dbe
 
 //Posts a MSSQLClientErrorNotification notification
 - (void)error:(NSString*)error code:(int)code severity:(int)severity {
-  self.lastError = [[NSError alloc] initWithDomain:MSSQLClientErrorDomain code:code userInfo:@{
-    NSLocalizedDescriptionKey: error,
-    MSSQLClientSeverityKey: @(severity)
-  }];
+//  self.lastError = [[NSError alloc] initWithDomain:MSSQLClientErrorDomain code:code userInfo:@{
+//    NSLocalizedDescriptionKey: error,
+//    MSSQLClientSeverityKey: @(severity)
+//  }];
   
   [[NSOperationQueue mainQueue] addOperationWithBlock:^{
     [[NSNotificationCenter defaultCenter] postNotificationName:MSSQLClientErrorNotification object:self userInfo:@{
@@ -673,23 +675,26 @@ int err_handler(DBPROCESS* dbproc, int severity, int dberr, int oserr, char* dbe
 }
 
 //Invokes execution completion handler on callback queue with results = nil
-- (void)executionFailure:(void (^)(NSArray* _Nullable results, NSError* _Nullable error))completion {
+- (void)executionFailure:(void (^)(NSArray* _Nullable results))completion {
+//- (void)executionFailure:(void (^)(NSArray* _Nullable results, NSError* _Nullable error))completion {
   self.executing = NO;
   [self cleanupAfterExecution];
   [self.callbackQueue addOperationWithBlock:^{
     if (completion) {
-      completion(nil, self.lastError);
+//      completion(nil, self.lastError);
+      completion(nil);
     }
   }];
 }
 
 //Invokes execution completion handler on callback queue with results array
-- (void)executionSuccess:(void (^)(NSArray* _Nullable results, NSError* _Nullable error))completion results:(NSArray*)results {
+//- (void)executionSuccess:(void (^)(NSArray* _Nullable results, NSError* _Nullable error))completion results:(NSArray*)results {
+- (void)executionSuccess:(void (^)(NSArray* _Nullable results))completion results:(NSArray*)results {
   self.executing = NO;
   [self cleanupAfterExecution];
   [self.callbackQueue addOperationWithBlock:^{
     if (completion) {
-      completion(results, nil);
+      completion(results);
     }
   }];
 }

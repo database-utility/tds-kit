@@ -96,8 +96,14 @@ To configure the connection for your server:
 * Add the following environment variables for your server. The values should be the same as you pass in to the `connect:` method.
 	* `HOST` (`server\instance:port`)
 	* `DATABASE` (optional)
-	* `USERNAME`
+	* `USERNAME` (`sa` is SQL Server’s default admin username)
 	* `PASSWORD`
+
+To start an SQL Server with the AdventureWorks sample database:
+
+```
+docker run -p 1433:1433 -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=my_p4ssw0rd_1s_v3ry_g00d' -d chriseaton/adventureworks:latest
+```
 
 
 ## Known Issues

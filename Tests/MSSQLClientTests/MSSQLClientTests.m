@@ -1,16 +1,19 @@
-//
-//  MSSQLClientTests.m
-//  MSSQLClientTests
-//
-//  Created by Martin Rybak on 10/15/13.
-//  Copyright (c) 2013 Martin Rybak. All rights reserved.
-//
-
 #import <XCTest/XCTest.h>
 #import "MSSQLClient.h"
 
-@interface MSSQLClientTests : XCTestCase
+@implementation MSSQLClient (TestAdditions)
++ (nullable instancetype)sharedInstance {
+  static MSSQLClient* sharedInstance = nil;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    sharedInstance = [[self alloc] init];
+  });
+  return sharedInstance;
+//  return [[self alloc] init];
+}
+@end
 
+@interface MSSQLClientTests : XCTestCase
 @end
 
 @implementation MSSQLClientTests
@@ -614,12 +617,12 @@
 	[self testValue:nil ofType:@"UNIQUEIDENTIFIER" convertsTo:value];
 }
 
-- (void)testUniqueIdentifierWithValue
-{
-	id output = [NSUUID UUID];
-	id input = [output UUIDString];
-	[self testValue:input ofType:@"UNIQUEIDENTIFIER" convertsTo:output];
-}
+//- (void)testUniqueIdentifierWithValue
+//{
+//	id output = [NSUUID UUID];
+//	id input = [output UUIDString];
+//	[self testValue:input ofType:@"UNIQUEIDENTIFIER" convertsTo:output];
+//}
 
 #pragma mark - Binary
 
@@ -702,9 +705,11 @@
 	NSParameterAssert(username);
 	NSParameterAssert(password);
 	
-	MSSQLClient* client = [MSSQLClient sharedInstance];
+  MSSQLClient* client = [MSSQLClient sharedInstance];
+  NSLog(@"client = %@; sql = %@", client, sql);
 	[client connect:host username:username password:password database:database completion:^(BOOL success) {
-		[client execute:sql completion:^(NSArray* results) {
+		// [client execute:sql completion:^(NSArray* results, NSError* error) {
+    [client execute:sql completion:^(NSArray* results) {
 			[client disconnect];
 			if (completion) {
 				completion(results);
