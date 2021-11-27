@@ -1,4 +1,4 @@
-# MSSQL Client
+# MSSQLClient
 
 Microsoft SQL Server client for iOS, watchOS, tvOS, and macOS. An Objective-C wrapper around the open-source [FreeTDS](https://github.com/FreeTDS/freetds/) library.
 
@@ -102,7 +102,7 @@ To configure the connection for your server:
 To start an SQL Server with the AdventureWorks sample database:
 
 ```
-docker run -p 1433:1433 -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=my_p4ssw0rd_1s_v3ry_g00d' -d chriseaton/adventureworks:latest
+docker run -p 1433:1433 -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=V3ry_g00d_p4ssw0rd' -d chriseaton/adventureworks:latest
 ```
 
 

@@ -41,7 +41,7 @@ extern NSString* _Nonnull const MSSQLClientSeverityKey;
        username:(nonnull NSString*)username
        password:(nonnull NSString*)password
        database:(nullable NSString*)database
-     completion:(nullable void(^)(BOOL success))completion;
+     completion:(nullable void(^)(NSError * _Nullable error))completion;
 
 /**
  *  Indicates whether the database is currently connected.
@@ -61,7 +61,7 @@ extern NSString* _Nonnull const MSSQLClientSeverityKey;
  *  Each row is an NSDictionary of columns where key = name and object = value as one of the following types:
  *  NSString, NSNumber, NSDecimalNumber, NSData, UIImage, NSDate, NSUUID
  */
-- (void)execute:(nonnull NSString*)sql completion:(nullable void(^)(NSArray* _Nullable results))completion;
+- (void)execute:(nonnull NSString*)sql completion:(nullable void(^)(NSArray* _Nullable_result results, NSError* _Nullable error))completion;
 //- (void)execute:(nonnull NSString*)sql completion:(nullable void(^)(NSArray* _Nullable_result results, NSError* _Nullable error))completion;
 //- (void)execute:(nonnull NSString*)sql completion:(nullable void(^)(NSArray* _Nullable_result results, NSError* _Nullable error))completion __attribute__((swift_async(none)));
 

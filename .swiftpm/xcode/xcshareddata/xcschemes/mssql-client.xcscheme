@@ -84,7 +84,7 @@
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "PASSWORD"
-            value = "yourStrong(\!)Password"
+            value = "V3ry_g00d_p4ssw0rd"
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>

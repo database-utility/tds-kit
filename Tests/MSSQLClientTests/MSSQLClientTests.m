@@ -20,21 +20,33 @@
 
 #pragma mark - CRUD
 
+- (void)testSelectWithConnectionError
+{
+  XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
+  [self execute:@"SELECT" password:@"invalid" completion:^(NSArray* results, NSError* error) {
+    XCTAssertNil(results);
+    XCTAssertNotNil(error);
+    [expectation fulfill];
+  }];
+  [self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+}
+
 - (void)testSelectWithError
 {
-	XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
-	[self execute:@"SELECT" completion:^(NSArray* results) {
-		XCTAssertNil(results);
-		[expectation fulfill];
-	}];
-	[self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+  XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
+  [self execute:@"SELECT" completion:^(NSArray* results, NSError* error) {
+    XCTAssertNil(results);
+    XCTAssertNotNil(error);
+    [expectation fulfill];
+  }];
+  [self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
 }
 
 - (void)testSelectWithOneTable
 {
 	NSString* sql = @"SELECT 'Foo' AS Bar";
 	XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
-	[self execute:sql completion:^(NSArray* results) {
+	[self execute:sql completion:^(NSArray* results, NSError* error) {
 		XCTAssertNotNil(results);
 		XCTAssertEqual(results.count, 1);
 		XCTAssertEqual([results[0] count], 1);
@@ -51,7 +63,7 @@
 	[sql appendString:@"SELECT * FROM (VALUES (1), (2), (3)) AS Table1(a)"];
 	
 	XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
-	[self execute:sql completion:^(NSArray* results) {
+	[self execute:sql completion:^(NSArray* results, NSError* error) {
 		XCTAssertNotNil(results);
 		XCTAssertEqual(results.count, 2);
 		XCTAssertEqual([results[0] count], 1);
@@ -73,7 +85,7 @@
 	[sql appendString:@"DROP TABLE #Temp;"];
 	
 	XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
-	[self execute:sql completion:^(NSArray* results) {
+	[self execute:sql completion:^(NSArray* results, NSError* error) {
 		XCTAssertNotNil(results);
 		XCTAssertEqual(results.count, 0);
 		[expectation fulfill];
@@ -90,7 +102,7 @@
 	[sql appendString:@"DROP TABLE #Temp;"];
 	
 	XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
-	[self execute:sql completion:^(NSArray* results) {
+	[self execute:sql completion:^(NSArray* results, NSError* error) {
 		XCTAssertNotNil(results);
 		XCTAssertEqual(results.count, 1);
 		XCTAssertEqual([results[0] count], 1);
@@ -109,7 +121,7 @@
 	[sql appendString:@"DROP TABLE #Temp;"];
 	
 	XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
-	[self execute:sql completion:^(NSArray* results) {
+	[self execute:sql completion:^(NSArray* results, NSError* error) {
 		XCTAssertNotNil(results);
 		XCTAssertEqual(results.count, 0);
 		[expectation fulfill];
@@ -127,7 +139,7 @@
 	[sql appendString:@"DROP TABLE #Temp;"];
 	
 	XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
-	[self execute:sql completion:^(NSArray* results) {
+	[self execute:sql completion:^(NSArray* results, NSError* error) {
 		XCTAssertNotNil(results);
 		XCTAssertEqual(results.count, 1);
 		XCTAssertEqual([results[0] count], 1);
@@ -147,7 +159,7 @@
 	[sql appendString:@"DROP TABLE #Temp;"];
 	
 	XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
-	[self execute:sql completion:^(NSArray* results) {
+	[self execute:sql completion:^(NSArray* results, NSError* error) {
 		XCTAssertNotNil(results);
 		XCTAssertEqual(results.count, 0);
 		[expectation fulfill];
@@ -165,7 +177,7 @@
 	[sql appendString:@"DROP TABLE #Temp;"];
 	
 	XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
-	[self execute:sql completion:^(NSArray* results) {
+	[self execute:sql completion:^(NSArray* results, NSError* error) {
 		XCTAssertNotNil(results);
 		XCTAssertEqual(results.count, 1);
 		XCTAssertEqual([results[0] count], 0);
@@ -668,7 +680,7 @@
 	}
 
 	XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
-	[self execute:sql completion:^(NSArray* results) {
+	[self execute:sql completion:^(NSArray* results, NSError* error) {
 		XCTAssertEqualObjects(results[0][0][@"Value"], output);
 		[expectation fulfill];
 	}];
@@ -685,20 +697,25 @@
 	}
 	
 	XCTestExpectation* expectation = [self expectationWithDescription:NSStringFromSelector(_cmd)];
-	[self execute:sql completion:^(NSArray* results) {
+	[self execute:sql completion:^(NSArray* results, NSError* error) {
 		XCTAssertEqualObjects(results[0][0][@"Value"], output);
 		[expectation fulfill];
 	}];
 	[self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
 }
 
-- (void)execute:(NSString*)sql completion:(void (^)(NSArray* results))completion
+- (void)execute:(NSString*)sql completion:(void (^)(NSArray* results, NSError* error))completion
+{
+  NSDictionary* environment = [[NSProcessInfo processInfo] environment];
+  [self execute:sql password:environment[@"PASSWORD"] completion:completion];
+}
+
+- (void)execute:(NSString*)sql password:(NSString*)password completion:(void (^)(NSArray* results, NSError* error))completion
 {
 	//Environment variables from the Test Debug Scheme
 	NSDictionary* environment = [[NSProcessInfo processInfo] environment];
 	NSString* host = environment[@"HOST"];
 	NSString* username = environment[@"USERNAME"];
-	NSString* password = environment[@"PASSWORD"];
 	NSString* database = environment[@"DATABASE"];
 	
 	NSParameterAssert(host);
@@ -707,12 +724,12 @@
 	
   MSSQLClient* client = [MSSQLClient sharedInstance];
   NSLog(@"client = %@; sql = %@", client, sql);
-	[client connect:host username:username password:password database:database completion:^(BOOL success) {
-		// [client execute:sql completion:^(NSArray* results, NSError* error) {
-    [client execute:sql completion:^(NSArray* results) {
+	[client connect:host username:username password:password database:database completion:^(NSError* error) {
+		 [client execute:sql completion:^(NSArray* _Nullable_result results, NSError* _Nullable error) {
+//    [client execute:sql completion:^(NSArray* results, NSError* error) {
 			[client disconnect];
 			if (completion) {
-				completion(results);
+				completion(results, error);
 			}
 		}];
 	}];

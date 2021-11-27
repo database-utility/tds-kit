@@ -12,6 +12,7 @@ int const MSSQLClientDefaultMaxTextSize = 4096;
 NSString* const MSSQLClientDefaultCharset = @"UTF-8";
 NSString* const MSSQLClientWorkerQueueName = @"MSSQLClient";
 NSString* const MSSQLClientPendingConnectionError = @"Attempting to connect while a connection is active.";
+NSString* const MSSQLClientInternalError = @"Interal error.";
 NSString* const MSSQLClientNoConnectionError = @"Attempting to execute while not connected.";
 NSString* const MSSQLClientPendingExecutionError = @"Attempting to execute while a command is in progress.";
 NSString* const MSSQLClientRowIgnoreMessage = @"Ignoring unknown row type";
@@ -42,7 +43,8 @@ struct COLUMN {
 @property (nonatomic, strong) NSOperationQueue* workerQueue;
 @property (nonatomic, weak) NSOperationQueue* callbackQueue;
 @property (atomic, assign, getter=isExecuting) BOOL executing;
-//@property (nonatomic, strong) NSError* lastError;
+@property (atomic, strong) NSError* lastError;
+@property (class, readonly) MSSQLClient* current;
 
 @end
 
@@ -54,6 +56,9 @@ struct COLUMN {
   int _numColumns;
   RETCODE _returnCode;
 }
+
+static MSSQLClient* _current;
++ (MSSQLClient*)current { return _current; }
 
 #pragma mark - NSObject
 
@@ -98,7 +103,7 @@ struct COLUMN {
        username:(nonnull NSString*)username
        password:(nonnull NSString*)password
        database:(nullable NSString*)database
-     completion:(nullable void(^)(BOOL success))completion {
+     completion:(nullable void(^)(NSError * _Nullable error))completion {
   NSParameterAssert(host);
   NSParameterAssert(username);
   NSParameterAssert(password);
@@ -107,7 +112,7 @@ struct COLUMN {
   [self.workerQueue addOperationWithBlock:^{
     
     if (self.isConnected) {
-      [self message:MSSQLClientPendingConnectionError];
+      [self message:MSSQLClientPendingConnectionError severity:EXUSER];
       [self connectionFailure:completion];
       return;
     }
@@ -122,6 +127,7 @@ struct COLUMN {
     //Initialize login struct
     _login = dblogin();
     if (_login == FAIL) {
+      [self message:MSSQLClientInternalError severity:EXUSER];
       [self connectionFailure:completion];
       return;
     }
@@ -136,6 +142,8 @@ struct COLUMN {
     dbsetlogintime(self.timeout);
     
     //Connect to database server
+    // TODO: make this thread-safe by only letting one client connect at a time
+    _current = self;
     _connection = dbopen(_login, [host UTF8String]);
     if (!_connection) {
       [self connectionFailure:completion];
@@ -164,7 +172,7 @@ struct COLUMN {
 
 // TODO: get number of records modified for insert/update/delete commands
 // TODO: handle SQL stored procedure output parameters
-- (void)execute:(nonnull NSString*)sql completion:(nullable void(^)(NSArray* _Nullable results))completion {
+- (void)execute:(nonnull NSString*)sql completion:(nullable void(^)(NSArray* _Nullable_result results,  NSError* _Nullable error))completion {
 //- (void)execute:(nonnull NSString*)sql completion:(nullable void(^)(NSArray* results, NSError* error))completion {
   NSParameterAssert(sql);
   
@@ -172,19 +180,19 @@ struct COLUMN {
   [self.workerQueue addOperationWithBlock:^{
     
     if (!self.isConnected) {
-      [self message:MSSQLClientNoConnectionError];
+      [self message:MSSQLClientNoConnectionError severity:EXUSER];
       [self executionFailure:completion];
       return;
     }
     
     if (self.isExecuting) {
-      [self message:MSSQLClientPendingExecutionError];
+      [self message:MSSQLClientPendingExecutionError severity:EXUSER];
       [self executionFailure:completion];
       return;
     }
     
     self.executing = YES;
-//    self.lastError = nil;
+    self.lastError = nil;
     
     //Set query timeout
     dbsettime(self.timeout);
@@ -553,7 +561,7 @@ struct COLUMN {
             [self executionFailure:completion];
             return;
           default:
-            [self message:MSSQLClientRowIgnoreMessage];
+            [self message:MSSQLClientRowIgnoreMessage severity:EXINFO];
             break;
         }
       }
@@ -582,9 +590,9 @@ struct COLUMN {
 
 //Handles message callback from FreeTDS library.
 int msg_handler(DBPROCESS* dbproc, DBINT msgno, int msgstate, int severity, char* msgtext, char* srvname, char* procname, int line) {
-  MSSQLClient* self = (__bridge MSSQLClient*)(void*)dbgetuserdata(dbproc);
-  // NSLog(@"[MSSQLClient] info: %@", [NSString stringWithUTF8String:msgtext]);
-  [self message:[NSString stringWithUTF8String:msgtext]];
+  // MSSQLClient* self = (__bridge MSSQLClient*)(void*)dbgetuserdata(dbproc);
+  // NSLog(@"[MSSQLClient] msgstate: %i severity: %i message: %@ srvname: %@ procname: %@", msgstate, severity, [NSString stringWithUTF8String:msgtext], [NSString stringWithUTF8String:srvname], [NSString stringWithUTF8String:procname]);
+  [MSSQLClient.current message:[NSString stringWithUTF8String:msgtext] severity:severity];
   return INT_EXIT;
 }
 
@@ -592,13 +600,22 @@ int msg_handler(DBPROCESS* dbproc, DBINT msgno, int msgstate, int severity, char
 int err_handler(DBPROCESS* dbproc, int severity, int dberr, int oserr, char* dberrstr, char* oserrstr) {
 //  MSSQLClient* self = CFBridgingRetain((MSSQLClient*)dbgetuserdata(dbproc));
   MSSQLClient* self = (__bridge MSSQLClient*)(void*)dbgetuserdata(dbproc);
-  NSLog(@"[MSSQLClient] error: %@", [NSString stringWithUTF8String:dberrstr]);
+  if (!self) self = MSSQLClient.current;
+  // NSLog(@"[MSSQLClient] error: %@ self: %@", [NSString stringWithUTF8String:dberrstr], self);
   [self error:[NSString stringWithUTF8String:dberrstr] code:dberr severity:severity];
   return INT_CANCEL;
 }
 
 //Posts a MSSQLClientMessageNotification notification
-- (void)message:(NSString*)message {
+- (void)message:(NSString*)message severity:(int)severity {
+  if (severity > EXINFO) {
+    self.lastError = [[NSError alloc] initWithDomain:MSSQLClientErrorDomain code:-1 userInfo:@{
+      NSLocalizedDescriptionKey: message
+    }];
+  } else {
+    self.lastError = nil;
+  }
+  
   [[NSOperationQueue mainQueue] addOperationWithBlock:^{
     [[NSNotificationCenter defaultCenter] postNotificationName:MSSQLClientMessageNotification object:self userInfo:@{ MSSQLClientMessageKey:message }];
   }];
@@ -606,10 +623,10 @@ int err_handler(DBPROCESS* dbproc, int severity, int dberr, int oserr, char* dbe
 
 //Posts a MSSQLClientErrorNotification notification
 - (void)error:(NSString*)error code:(int)code severity:(int)severity {
-//  self.lastError = [[NSError alloc] initWithDomain:MSSQLClientErrorDomain code:code userInfo:@{
-//    NSLocalizedDescriptionKey: error,
-//    MSSQLClientSeverityKey: @(severity)
-//  }];
+  self.lastError = [[NSError alloc] initWithDomain:MSSQLClientErrorDomain code:code userInfo:@{
+    NSLocalizedDescriptionKey: error,
+    MSSQLClientSeverityKey: @(severity)
+  }];
   
   [[NSOperationQueue mainQueue] addOperationWithBlock:^{
     [[NSNotificationCenter defaultCenter] postNotificationName:MSSQLClientErrorNotification object:self userInfo:@{
@@ -655,46 +672,52 @@ int err_handler(DBPROCESS* dbproc, int severity, int dberr, int oserr, char* dbe
 #pragma mark - Private
 
 //Invokes connection completion handler on callback queue with success = NO
-- (void)connectionFailure:(void (^)(BOOL success))completion {
+- (void)connectionFailure:(void (^)(NSError * _Nullable error))completion {
+  NSParameterAssert(self.lastError);
   [self cleanupAfterConnection];
   [self.callbackQueue addOperationWithBlock:^{
     if (completion) {
-      completion(NO);
+      completion(self.lastError);
     }
   }];
 }
 
 //Invokes connection completion handler on callback queue with success = [self connected]
-- (void)connectionSuccess:(void (^)(BOOL success))completion {
+- (void)connectionSuccess:(void (^)(NSError * _Nullable error))completion {
 //  [self cleanupAfterConnection];
   [self.callbackQueue addOperationWithBlock:^{
     if (completion) {
-      completion([self isConnected]);
+//      NSError* error = [[NSError alloc] initWithDomain:MSSQLClientErrorDomain code:code userInfo:@{
+//        NSLocalizedDescriptionKey: error,
+//        MSSQLClientSeverityKey: @(severity)
+//      }];
+
+      completion([self isConnected] ? nil : self.lastError);
     }
   }];
 }
 
 //Invokes execution completion handler on callback queue with results = nil
-- (void)executionFailure:(void (^)(NSArray* _Nullable results))completion {
-//- (void)executionFailure:(void (^)(NSArray* _Nullable results, NSError* _Nullable error))completion {
+//- (void)executionFailure:(void (^)(NSArray* _Nullable results))completion {
+- (void)executionFailure:(void (^)(NSArray* _Nullable_result results, NSError* _Nullable error))completion {
   self.executing = NO;
   [self cleanupAfterExecution];
   [self.callbackQueue addOperationWithBlock:^{
     if (completion) {
-//      completion(nil, self.lastError);
-      completion(nil);
+      completion(nil, self.lastError);
+//      completion(nil, nil);
     }
   }];
 }
 
 //Invokes execution completion handler on callback queue with results array
-//- (void)executionSuccess:(void (^)(NSArray* _Nullable results, NSError* _Nullable error))completion results:(NSArray*)results {
-- (void)executionSuccess:(void (^)(NSArray* _Nullable results))completion results:(NSArray*)results {
+- (void)executionSuccess:(void (^)(NSArray* _Nullable_result results, NSError* _Nullable error))completion results:(NSArray*)results {
+//- (void)executionSuccess:(void (^)(NSArray* _Nullable results))completion results:(NSArray*)results {
   self.executing = NO;
   [self cleanupAfterExecution];
   [self.callbackQueue addOperationWithBlock:^{
     if (completion) {
-      completion(results);
+      completion(results, nil);
     }
   }];
 }
