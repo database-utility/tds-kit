@@ -38,12 +38,15 @@ struct COLUMN {
   BYTE* data;
 };
 
+@implementation MSSQLError
+@end
+
 @interface MSSQLClient ()
 
 @property (nonatomic, strong) NSOperationQueue* workerQueue;
 @property (nonatomic, weak) NSOperationQueue* callbackQueue;
 @property (atomic, assign, getter=isExecuting) BOOL executing;
-@property (atomic, strong) NSError* lastError;
+@property (atomic, strong) MSSQLError* lastError;
 @property (class, readonly) MSSQLClient* current;
 
 @end
@@ -609,7 +612,7 @@ int err_handler(DBPROCESS* dbproc, int severity, int dberr, int oserr, char* dbe
 //Posts a MSSQLClientMessageNotification notification
 - (void)message:(NSString*)message severity:(int)severity {
   if (severity > EXINFO) {
-    self.lastError = [[NSError alloc] initWithDomain:MSSQLClientErrorDomain code:-1 userInfo:@{
+    self.lastError = [[MSSQLError alloc] initWithDomain:MSSQLClientErrorDomain code:-1 userInfo:@{
       NSLocalizedDescriptionKey: message
     }];
   } else {
@@ -623,7 +626,7 @@ int err_handler(DBPROCESS* dbproc, int severity, int dberr, int oserr, char* dbe
 
 //Posts a MSSQLClientErrorNotification notification
 - (void)error:(NSString*)error code:(int)code severity:(int)severity {
-  self.lastError = [[NSError alloc] initWithDomain:MSSQLClientErrorDomain code:code userInfo:@{
+  self.lastError = [[MSSQLError alloc] initWithDomain:MSSQLClientErrorDomain code:code userInfo:@{
     NSLocalizedDescriptionKey: error,
     MSSQLClientSeverityKey: @(severity)
   }];

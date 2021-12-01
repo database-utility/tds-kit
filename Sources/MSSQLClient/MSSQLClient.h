@@ -6,6 +6,9 @@ extern NSString* _Nonnull const MSSQLClientMessageKey;
 extern NSString* _Nonnull const MSSQLClientCodeKey;
 extern NSString* _Nonnull const MSSQLClientSeverityKey;
 
+@interface MSSQLError : NSError
+@end
+
 @interface MSSQLClient : NSObject
 
 /**
