@@ -219,8 +219,7 @@ static MSSQLClient* _current;
     
     //Loop through each table metadata
     //dbresults() returns SUCCEED, FAIL or, NO_MORE_RESULTS.
-    while ((_returnCode = dbresults(_connection)) != NO_MORE_RESULTS)
-    {
+    while ((_returnCode = dbresults(_connection)) != NO_MORE_RESULTS) {
       if (_returnCode == FAIL) {
         [self executionFailure:completion];
         return;
@@ -248,8 +247,7 @@ static MSSQLClient* _current;
       STATUS rowCode;
       
       //Bind the column info
-      for (column = _columns; column - _columns < _numColumns; column++)
-      {
+      for (column = _columns; column - _columns < _numColumns; column++) {
         //Get column number
         int c = (int)(column - _columns + 1);
         
@@ -260,60 +258,49 @@ static MSSQLClient* _current;
         
         //Set bind type based on column type
         int bindType = CHARBIND; //Default
-        switch (column->type)
-        {
+        switch (column->type) {
           case SYBBIT:
-          case SYBBITN:
-          {
+          case SYBBITN: {
             bindType = BITBIND;
             break;
           }
-          case SYBINT1:
-          {
+          case SYBINT1: {
             bindType = TINYBIND;
             break;
           }
-          case SYBINT2:
-          {
+          case SYBINT2: {
             bindType = SMALLBIND;
             break;
           }
           case SYBINT4:
-          case SYBINTN:
-          {
+          case SYBINTN: {
             bindType = INTBIND;
             break;
           }
-          case SYBINT8:
-          {
+          case SYBINT8: {
             bindType = BIGINTBIND;
             break;
           }
           case SYBFLT8:
-          case SYBFLTN:
-          {
+          case SYBFLTN: {
             bindType = FLT8BIND;
             break;
           }
-          case SYBREAL:
-          {
+          case SYBREAL: {
             bindType = REALBIND;
             break;
           }
-          case SYBMONEY4:
-          {
+          case SYBMONEY4: {
             bindType = SMALLMONEYBIND;
             break;
           }
           case SYBMONEY:
-          case SYBMONEYN:
-          {
+          case SYBMONEYN: {
             bindType = MONEYBIND;
             break;
           }
           case SYBDECIMAL:
-          case SYBNUMERIC:
-          {
+          case SYBNUMERIC: {
             //Workaround for incorrect size
             bindType = CHARBIND;
             column->size += 23;
@@ -325,8 +312,7 @@ static MSSQLClient* _current;
           case SYBTEXT:
           case SYBNTEXT:
           case 241:
-          case 163:
-          {
+          case 163: {
             bindType = NTBSTRINGBIND;
             column->size = MIN(column->size, self.maxTextSize);
             break;
@@ -335,28 +321,24 @@ static MSSQLClient* _current;
           case SYBDATETIME4:
           case SYBDATETIMN:
           case SYBBIGDATETIME:
-          case SYBBIGTIME:
-          {
+          case SYBBIGTIME: {
             bindType = DATETIMEBIND;
             break;
           }
           case SYBDATE:
-          case SYBMSDATE:
-          {
+          case SYBMSDATE: {
             bindType = DATEBIND;
             break;
           }
           case SYBTIME:
-          case SYBMSTIME:
-          {
+          case SYBMSTIME: {
             //Workaround for TIME data type. We have to increase the size and cast as string.
             column->size += 14;
             bindType = CHARBIND;
             break;
           }
           case SYBMSDATETIMEOFFSET:
-          case SYBMSDATETIME2:
-          {
+          case SYBMSDATETIME2: {
             bindType = DATETIME2BIND;
             break;
           }
@@ -364,8 +346,7 @@ static MSSQLClient* _current;
           case SYBIMAGE:
           case SYBBINARY:
           case SYBVARBINARY:
-          case SYBUNIQUEIDENTIFIER:
-          {
+          case SYBUNIQUEIDENTIFIER: {
             bindType = BINARYBIND;
             break;
           }
@@ -394,28 +375,22 @@ static MSSQLClient* _current;
       }
       
       //Loop through each row
-      while ((rowCode = dbnextrow(_connection)) != NO_MORE_ROWS)
-      {
+      while ((rowCode = dbnextrow(_connection)) != NO_MORE_ROWS) {
         //Check row type
-        switch (rowCode)
-        {
+        switch (rowCode) {
             //Regular row
-          case REG_ROW:
-          {
+          case REG_ROW: {
             //Create a new dictionary to contain the column names and vaues
             NSMutableDictionary* row = [[NSMutableDictionary alloc] initWithCapacity:_numColumns];
             
             //Loop through each column and create an entry where dictionary[columnName] = columnValue
-            for (column = _columns; column - _columns < _numColumns; column++)
-            {
+            for (column = _columns; column - _columns < _numColumns; column++) {
               //Default to null
               id value = [NSNull null];
               
               //If not null, update value with column data
-              if (column->status != -1)
-              {
-                switch (column->type)
-                {
+              if (column->status != -1) {
+                switch (column->type) {
                   case SYBBIT: //0 or 1
                   {
                     BOOL _value;
