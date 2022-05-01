@@ -13,8 +13,8 @@ let package = Package(
     .library(name: "MSSQLClient", targets: ["MSSQLClient"]),
   ],
   targets: [
-    .binaryTarget(name: "FreeTDS", path: "libsybdb.xcframework"),
-    .target(name: "MSSQLClient", dependencies: ["FreeTDS"], publicHeadersPath: "."),
-    .testTarget(name: "MSSQLClientTests", dependencies: ["MSSQLClient", "FreeTDS"]),
+    .binaryTarget(name: "libsybdb", path: "libsybdb.xcframework"),
+    .target(name: "MSSQLClient", dependencies: ["libsybdb"], publicHeadersPath: "."),
+    .testTarget(name: "MSSQLClientTests", dependencies: ["MSSQLClient", "libsybdb"]),
   ]
 )
