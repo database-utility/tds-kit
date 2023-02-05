@@ -1,15 +1,15 @@
 @import Foundation;
 
-extern NSString* _Nonnull const MSSQLClientMessageNotification;
-extern NSString* _Nonnull const MSSQLClientErrorNotification;
-extern NSString* _Nonnull const MSSQLClientMessageKey;
-extern NSString* _Nonnull const MSSQLClientCodeKey;
-extern NSString* _Nonnull const MSSQLClientSeverityKey;
+extern NSString* _Nonnull const TDSClientMessageNotification;
+extern NSString* _Nonnull const TDSClientErrorNotification;
+extern NSString* _Nonnull const TDSClientMessageKey;
+extern NSString* _Nonnull const TDSClientCodeKey;
+extern NSString* _Nonnull const TDSClientSeverityKey;
 
-@interface MSSQLError : NSError
+@interface TDSError : NSError
 @end
 
-@interface MSSQLClient : NSObject
+@interface TDSClient : NSObject
 
 /**
  *  Connection timeout, in seconds. Default is 5. Set before calling connect.
@@ -26,7 +26,7 @@ extern NSString* _Nonnull const MSSQLClientSeverityKey;
 
 /**
  *  The maximum length of a string in a query is configured on the server via the SET TEXTSIZE command.
- *  To find out your current setting, execute SELECT @@TEXTSIZE. MSSQLClient uses 4096 by default.
+ *  To find out your current setting, execute SELECT @@TEXTSIZE. TDSClient uses 4096 by default.
  *  To override this setting, update this property.
  */
 @property (atomic, assign) int maxTextSize;

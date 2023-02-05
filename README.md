@@ -1,4 +1,4 @@
-# MSSQLClient
+# TDSKit
 
 Microsoft SQL Server client for iOS, watchOS, tvOS, and macOS. An Objective-C wrapper around the open-source [FreeTDS](https://github.com/FreeTDS/freetds/) library.
 
@@ -6,9 +6,9 @@ Microsoft SQL Server client for iOS, watchOS, tvOS, and macOS. An Objective-C wr
 ## Sample Usage
 
 <pre>
-&#35;import "MSSQLClient.h"
+&#35;import "TDSClient.h"
 
-MSSQLClient* client = [MSSQLClient new];
+TDSClient* client = [TDSClient new];
 [client connect:@"server\instance:port" username:@"user" password:@"password" database:@"db" completion:^(BOOL success) {
     if (success) {
       [client execute:@"SELECT * FROM Users" completion:^(NSArray* results) {
@@ -28,7 +28,7 @@ MSSQLClient* client = [MSSQLClient new];
 
 ## Type Conversion
 
-MSSQLClient maps SQL Server data types into the following native Objective-C types:
+TDSClient maps SQL Server data types into the following native Objective-C types:
 
 * bigint → NSNumber
 * binary(n) → NSData
@@ -81,7 +81,7 @@ A value of `auto` tells FreeTDS to use an autodetection (trial-and-error) algori
 
 ## Testing
 
-The `MSSQLClientTests` target contains integration tests which require a connection to an instance of SQL Server. The integration tests have passed successfully on the following database servers:
+The `TDSClientTests` target contains integration tests which require a connection to an instance of SQL Server. The integration tests have passed successfully on the following database servers:
 
 * SQL Server 7.0 (TDS 7.0)
 * SQL Server 2000 (TDS 7.1)

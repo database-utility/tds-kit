@@ -1,9 +1,9 @@
 #import <XCTest/XCTest.h>
-#import "MSSQLClient.h"
+#import "TDSClient.h"
 
-@implementation MSSQLClient (TestAdditions)
+@implementation TDSClient (TestAdditions)
 + (nullable instancetype)sharedInstance {
-  static MSSQLClient* sharedInstance = nil;
+  static TDSClient* sharedInstance = nil;
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
     sharedInstance = [[self alloc] init];
@@ -13,10 +13,10 @@
 }
 @end
 
-@interface MSSQLClientTests : XCTestCase
+@interface TDSClientTests : XCTestCase
 @end
 
-@implementation MSSQLClientTests
+@implementation TDSClientTests
 
 #pragma mark - CRUD
 
@@ -28,7 +28,7 @@
     XCTAssertNotNil(error);
     [expectation fulfill];
   }];
-  [self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+  [self waitForExpectationsWithTimeout:[TDSClient sharedInstance].timeout handler:nil];
 }
 
 - (void)testSelectWithError
@@ -39,7 +39,7 @@
     XCTAssertNotNil(error);
     [expectation fulfill];
   }];
-  [self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+  [self waitForExpectationsWithTimeout:[TDSClient sharedInstance].timeout handler:nil];
 }
 
 - (void)testSelectWithOneTable
@@ -53,7 +53,7 @@
 		XCTAssertEqualObjects(results[0][0][@"Bar"], @"Foo");
 		[expectation fulfill];
 	}];
-	[self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+	[self waitForExpectationsWithTimeout:[TDSClient sharedInstance].timeout handler:nil];
 }
 
 - (void)testSelectWithTwoTables
@@ -74,7 +74,7 @@
 		XCTAssertEqualObjects(results[1][2][@"a"], @(3));
 		[expectation fulfill];
 	}];
-	[self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+	[self waitForExpectationsWithTimeout:[TDSClient sharedInstance].timeout handler:nil];
 }
 
 - (void)testInsert
@@ -90,7 +90,7 @@
 		XCTAssertEqual(results.count, 0);
 		[expectation fulfill];
 	}];
-	[self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+	[self waitForExpectationsWithTimeout:[TDSClient sharedInstance].timeout handler:nil];
 }
 
 - (void)testInsertWithSelect
@@ -109,7 +109,7 @@
 		XCTAssertEqualObjects(results[0][0][@"Id"], @(1));
 		[expectation fulfill];
 	}];
-	[self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+	[self waitForExpectationsWithTimeout:[TDSClient sharedInstance].timeout handler:nil];
 }
 
 - (void)testUpdate
@@ -126,7 +126,7 @@
 		XCTAssertEqual(results.count, 0);
 		[expectation fulfill];
 	}];
-	[self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+	[self waitForExpectationsWithTimeout:[TDSClient sharedInstance].timeout handler:nil];
 }
 
 - (void)testUpdateWithSelect
@@ -147,7 +147,7 @@
 		XCTAssertEqualObjects(results[0][0][@"Name"], @"Bar");
 		[expectation fulfill];
 	}];
-	[self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+	[self waitForExpectationsWithTimeout:[TDSClient sharedInstance].timeout handler:nil];
 }
 
 - (void)testDelete
@@ -164,7 +164,7 @@
 		XCTAssertEqual(results.count, 0);
 		[expectation fulfill];
 	}];
-	[self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+	[self waitForExpectationsWithTimeout:[TDSClient sharedInstance].timeout handler:nil];
 }
 
 - (void)testDeleteWithSelect
@@ -183,7 +183,7 @@
 		XCTAssertEqual([results[0] count], 0);
 		[expectation fulfill];
 	}];
-	[self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+	[self waitForExpectationsWithTimeout:[TDSClient sharedInstance].timeout handler:nil];
 }
 
 #pragma mark - Bit
@@ -593,8 +593,8 @@
 
 - (void)testVarCharMaxWithMaximum
 {
-	id input = [self stringWithLength:[MSSQLClient sharedInstance].maxTextSize + 1];
-	id output = [input substringToIndex:[MSSQLClient sharedInstance].maxTextSize - 1];
+	id input = [self stringWithLength:[TDSClient sharedInstance].maxTextSize + 1];
+	id output = [input substringToIndex:[TDSClient sharedInstance].maxTextSize - 1];
 	[self testValue:input ofType:@"VARCHAR(MAX)" convertsTo:output];
 }
 
@@ -616,8 +616,8 @@
 
 - (void)testTextWithMaximum
 {
-	id input = [self stringWithLength:[MSSQLClient sharedInstance].maxTextSize + 1];
-	id output = [input substringToIndex:[MSSQLClient sharedInstance].maxTextSize - 1];
+	id input = [self stringWithLength:[TDSClient sharedInstance].maxTextSize + 1];
+	id output = [input substringToIndex:[TDSClient sharedInstance].maxTextSize - 1];
 	[self testValue:input ofType:@"TEXT" convertsTo:output];
 }
 
@@ -684,7 +684,7 @@
 		XCTAssertEqualObjects(results[0][0][@"Value"], output);
 		[expectation fulfill];
 	}];
-	[self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+	[self waitForExpectationsWithTimeout:[TDSClient sharedInstance].timeout handler:nil];
 }
 
 - (void)testBinaryValue:(id)input ofType:(NSString*)type convertsTo:(id)output withStyle:(int)style
@@ -701,7 +701,7 @@
 		XCTAssertEqualObjects(results[0][0][@"Value"], output);
 		[expectation fulfill];
 	}];
-	[self waitForExpectationsWithTimeout:[MSSQLClient sharedInstance].timeout handler:nil];
+	[self waitForExpectationsWithTimeout:[TDSClient sharedInstance].timeout handler:nil];
 }
 
 - (void)execute:(NSString*)sql completion:(void (^)(NSArray* results, NSError* error))completion
@@ -722,7 +722,7 @@
 	NSParameterAssert(username);
 	NSParameterAssert(password);
 	
-  MSSQLClient* client = [MSSQLClient sharedInstance];
+  TDSClient* client = [TDSClient sharedInstance];
   NSLog(@"client = %@; sql = %@", client, sql);
 	[client connect:host username:username password:password database:database completion:^(NSError* error) {
 		 [client execute:sql completion:^(NSArray* _Nullable_result results, NSError* _Nullable error) {

@@ -1,4 +1,4 @@
-#import "MSSQLClient.h"
+#import "TDSClient.h"
 
 #define _WINDEF_H 1
 #import "sybfront.h"
@@ -7,21 +7,21 @@
 
 #define SYBUNIQUEIDENTIFIER 36
 
-int const MSSQLClientDefaultTimeout = 5;
-int const MSSQLClientDefaultMaxTextSize = 4096;
-NSString* const MSSQLClientDefaultCharset = @"UTF-8";
-NSString* const MSSQLClientWorkerQueueName = @"MSSQLClient";
-NSString* const MSSQLClientPendingConnectionError = @"Attempting to connect while a connection is active.";
-NSString* const MSSQLClientInternalError = @"Interal error.";
-NSString* const MSSQLClientNoConnectionError = @"Attempting to execute while not connected.";
-NSString* const MSSQLClientPendingExecutionError = @"Attempting to execute while a command is in progress.";
-NSString* const MSSQLClientRowIgnoreMessage = @"Ignoring unknown row type";
-NSString* const MSSQLClientErrorDomain = @"MSSQLClient";
-NSString* const MSSQLClientMessageNotification = @"MSSQLClientMessageNotification";
-NSString* const MSSQLClientErrorNotification = @"MSSQLClientErrorNotification";
-NSString* const MSSQLClientMessageKey = @"MSSQLClientMessageKey";
-NSString* const MSSQLClientCodeKey = @"MSSQLClientCodeKey";
-NSString* const MSSQLClientSeverityKey = @"MSSQLClientSeverityKey";
+int const TDSClientDefaultTimeout = 5;
+int const TDSClientDefaultMaxTextSize = 4096;
+NSString* const TDSClientDefaultCharset = @"UTF-8";
+NSString* const TDSClientWorkerQueueName = @"TDSClient";
+NSString* const TDSClientPendingConnectionError = @"Attempting to connect while a connection is active.";
+NSString* const TDSClientInternalError = @"Interal error.";
+NSString* const TDSClientNoConnectionError = @"Attempting to execute while not connected.";
+NSString* const TDSClientPendingExecutionError = @"Attempting to execute while a command is in progress.";
+NSString* const TDSClientRowIgnoreMessage = @"Ignoring unknown row type";
+NSString* const TDSClientErrorDomain = @"TDSClient";
+NSString* const TDSClientMessageNotification = @"TDSClientMessageNotification";
+NSString* const TDSClientErrorNotification = @"TDSClientErrorNotification";
+NSString* const TDSClientMessageKey = @"TDSClientMessageKey";
+NSString* const TDSClientCodeKey = @"TDSClientCodeKey";
+NSString* const TDSClientSeverityKey = @"TDSClientSeverityKey";
 
 struct GUID {
   unsigned long  data1;
@@ -38,20 +38,20 @@ struct COLUMN {
   BYTE* data;
 };
 
-@implementation MSSQLError
+@implementation TDSError
 @end
 
-@interface MSSQLClient ()
+@interface TDSClient ()
 
 @property (nonatomic, strong) NSOperationQueue* workerQueue;
 @property (nonatomic, weak) NSOperationQueue* callbackQueue;
 @property (atomic, assign, getter=isExecuting) BOOL executing;
-@property (atomic, strong) MSSQLError* lastError;
-@property (class, readonly) MSSQLClient* current;
+@property (atomic, strong) TDSError* lastError;
+@property (class, readonly) TDSClient* current;
 
 @end
 
-@implementation MSSQLClient {
+@implementation TDSClient {
   char* _password;
   LOGINREC* _login;
   DBPROCESS* _connection;
@@ -60,8 +60,8 @@ struct COLUMN {
   RETCODE _returnCode;
 }
 
-static MSSQLClient* _current;
-+ (MSSQLClient*)current { return _current; }
+static TDSClient* _current;
++ (TDSClient*)current { return _current; }
 
 #pragma mark - NSObject
 
@@ -73,14 +73,14 @@ static MSSQLClient* _current;
       return nil;
     }
     
-    //Initialize MSSQLClient
-    self.timeout = MSSQLClientDefaultTimeout;
-    self.charset = MSSQLClientDefaultCharset;
+    //Initialize TDSClient
+    self.timeout = TDSClientDefaultTimeout;
+    self.charset = TDSClientDefaultCharset;
     self.callbackQueue = [NSOperationQueue mainQueue];
     self.workerQueue = [[NSOperationQueue alloc] init];
-    self.workerQueue.name = MSSQLClientWorkerQueueName;
+    self.workerQueue.name = TDSClientWorkerQueueName;
     self.workerQueue.maxConcurrentOperationCount = 1;
-    self.maxTextSize = MSSQLClientDefaultMaxTextSize;
+    self.maxTextSize = TDSClientDefaultMaxTextSize;
     self.executing = NO;
     
     //Set FreeTDS callback handlers
@@ -115,7 +115,7 @@ static MSSQLClient* _current;
   [self.workerQueue addOperationWithBlock:^{
     
     if (self.isConnected) {
-      [self message:MSSQLClientPendingConnectionError severity:EXUSER];
+      [self message:TDSClientPendingConnectionError severity:EXUSER];
       [self connectionFailure:completion];
       return;
     }
@@ -130,7 +130,7 @@ static MSSQLClient* _current;
     //Initialize login struct
     _login = dblogin();
     if (_login == FAIL) {
-      [self message:MSSQLClientInternalError severity:EXUSER];
+      [self message:TDSClientInternalError severity:EXUSER];
       [self connectionFailure:completion];
       return;
     }
@@ -183,13 +183,13 @@ static MSSQLClient* _current;
   [self.workerQueue addOperationWithBlock:^{
     
     if (!self.isConnected) {
-      [self message:MSSQLClientNoConnectionError severity:EXUSER];
+      [self message:TDSClientNoConnectionError severity:EXUSER];
       [self executionFailure:completion];
       return;
     }
     
     if (self.isExecuting) {
-      [self message:MSSQLClientPendingExecutionError severity:EXUSER];
+      [self message:TDSClientPendingExecutionError severity:EXUSER];
       [self executionFailure:completion];
       return;
     }
@@ -539,7 +539,7 @@ static MSSQLClient* _current;
             [self executionFailure:completion];
             return;
           default:
-            [self message:MSSQLClientRowIgnoreMessage severity:EXINFO];
+            [self message:TDSClientRowIgnoreMessage severity:EXINFO];
             break;
         }
       }
@@ -568,26 +568,26 @@ static MSSQLClient* _current;
 
 //Handles message callback from FreeTDS library.
 int msg_handler(DBPROCESS* dbproc, DBINT msgno, int msgstate, int severity, char* msgtext, char* srvname, char* procname, int line) {
-  // MSSQLClient* self = (__bridge MSSQLClient*)(void*)dbgetuserdata(dbproc);
-  // NSLog(@"[MSSQLClient] msgstate: %i severity: %i message: %@ srvname: %@ procname: %@", msgstate, severity, [NSString stringWithUTF8String:msgtext], [NSString stringWithUTF8String:srvname], [NSString stringWithUTF8String:procname]);
-  [MSSQLClient.current message:[NSString stringWithUTF8String:msgtext] severity:severity];
+  // TDSClient* self = (__bridge TDSClient*)(void*)dbgetuserdata(dbproc);
+  // NSLog(@"[TDSClient] msgstate: %i severity: %i message: %@ srvname: %@ procname: %@", msgstate, severity, [NSString stringWithUTF8String:msgtext], [NSString stringWithUTF8String:srvname], [NSString stringWithUTF8String:procname]);
+  [TDSClient.current message:[NSString stringWithUTF8String:msgtext] severity:severity];
   return INT_EXIT;
 }
 
 //Handles error callback from FreeTDS library.
 int err_handler(DBPROCESS* dbproc, int severity, int dberr, int oserr, char* dberrstr, char* oserrstr) {
-//  MSSQLClient* self = CFBridgingRetain((MSSQLClient*)dbgetuserdata(dbproc));
-  MSSQLClient* self = (__bridge MSSQLClient*)(void*)dbgetuserdata(dbproc);
-  if (!self) self = MSSQLClient.current;
-  // NSLog(@"[MSSQLClient] error: %@ self: %@", [NSString stringWithUTF8String:dberrstr], self);
+//  TDSClient* self = CFBridgingRetain((TDSClient*)dbgetuserdata(dbproc));
+  TDSClient* self = (__bridge TDSClient*)(void*)dbgetuserdata(dbproc);
+  if (!self) self = TDSClient.current;
+  // NSLog(@"[TDSClient] error: %@ self: %@", [NSString stringWithUTF8String:dberrstr], self);
   [self error:[NSString stringWithUTF8String:dberrstr] code:dberr severity:severity];
   return INT_CANCEL;
 }
 
-//Posts a MSSQLClientMessageNotification notification
+//Posts a TDSClientMessageNotification notification
 - (void)message:(NSString*)message severity:(int)severity {
   if (severity > EXINFO) {
-    self.lastError = [[MSSQLError alloc] initWithDomain:MSSQLClientErrorDomain code:-1 userInfo:@{
+    self.lastError = [[TDSError alloc] initWithDomain:TDSClientErrorDomain code:-1 userInfo:@{
       NSLocalizedDescriptionKey: message
     }];
   } else {
@@ -595,22 +595,22 @@ int err_handler(DBPROCESS* dbproc, int severity, int dberr, int oserr, char* dbe
   }
   
   [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-    [[NSNotificationCenter defaultCenter] postNotificationName:MSSQLClientMessageNotification object:self userInfo:@{ MSSQLClientMessageKey:message }];
+    [[NSNotificationCenter defaultCenter] postNotificationName:TDSClientMessageNotification object:self userInfo:@{ TDSClientMessageKey:message }];
   }];
 }
 
-//Posts a MSSQLClientErrorNotification notification
+//Posts a TDSClientErrorNotification notification
 - (void)error:(NSString*)error code:(int)code severity:(int)severity {
-  self.lastError = [[MSSQLError alloc] initWithDomain:MSSQLClientErrorDomain code:code userInfo:@{
+  self.lastError = [[TDSError alloc] initWithDomain:TDSClientErrorDomain code:code userInfo:@{
     NSLocalizedDescriptionKey: error,
-    MSSQLClientSeverityKey: @(severity)
+    TDSClientSeverityKey: @(severity)
   }];
   
   [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-    [[NSNotificationCenter defaultCenter] postNotificationName:MSSQLClientErrorNotification object:self userInfo:@{
-      MSSQLClientMessageKey:error,
-      MSSQLClientCodeKey:@(code),
-      MSSQLClientSeverityKey:@(severity)
+    [[NSNotificationCenter defaultCenter] postNotificationName:TDSClientErrorNotification object:self userInfo:@{
+      TDSClientMessageKey:error,
+      TDSClientCodeKey:@(code),
+      TDSClientSeverityKey:@(severity)
     }];
   }];
 }
@@ -665,9 +665,9 @@ int err_handler(DBPROCESS* dbproc, int severity, int dberr, int oserr, char* dbe
 //  [self cleanupAfterConnection];
   [self.callbackQueue addOperationWithBlock:^{
     if (completion) {
-//      NSError* error = [[NSError alloc] initWithDomain:MSSQLClientErrorDomain code:code userInfo:@{
+//      NSError* error = [[NSError alloc] initWithDomain:TDSClientErrorDomain code:code userInfo:@{
 //        NSLocalizedDescriptionKey: error,
-//        MSSQLClientSeverityKey: @(severity)
+//        TDSClientSeverityKey: @(severity)
 //      }];
 
       completion([self isConnected] ? nil : self.lastError);

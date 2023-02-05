@@ -1,8 +1,8 @@
-// swift-tools-version:5.5
+// swift-tools-version: 5.5
 import PackageDescription
 
 let package = Package(
-  name: "mssql-client",
+  name: "tds-kit",
   platforms: [
     .macOS(.v12),
     .iOS(.v14),
@@ -10,11 +10,11 @@ let package = Package(
     .tvOS(.v14)
   ],
   products: [
-    .library(name: "MSSQLClient", targets: ["MSSQLClient"]),
+    .library(name: "TDSKit", targets: ["TDSKit"]),
   ],
   targets: [
     .binaryTarget(name: "libsybdb", path: "libsybdb.xcframework"),
-    .target(name: "MSSQLClient", dependencies: ["libsybdb"], publicHeadersPath: "."),
-    .testTarget(name: "MSSQLClientTests", dependencies: ["MSSQLClient", "libsybdb"]),
+    .target(name: "TDSKit", dependencies: ["libsybdb"], publicHeadersPath: "."),
+    .testTarget(name: "TDSKitTests", dependencies: ["TDSKit", "libsybdb"]),
   ]
 )
